@@ -7,120 +7,48 @@ from pyredis.types import Array, BulkString, Integer, Error, SimpleString
 @pytest.mark.parametrize(
     "buffer, expected",
     [
+        # Test invalid Message
+        (b"+PING", (None, 0)),
+        # Test cases for Simple Strings
         (b"+Par", (None, 0)),
         (b"+OK\r\n", (SimpleString("OK"), 5)),
         (b"+OK\r\n+Next", (SimpleString("OK"), 5)),
+        # Test cases for Errors
+        (b"-Err", (None, 0)),
+        (b"-Error Message\r\n", (Error("Error Message"), 16)),
+        (b"-Error Message\r\n+Other", (Error("Error Message"), 16)),
+        # Test cases for Integers
+        (b":10", (None, 0)),
+        (b":100\r\n", (Integer(100), 6)),
+        (b":100\r\n+OK", (Integer(100), 6)),
+        # Test cases for Bulk Strings
+        (b"$5\r\nHel", (None, 0)),
+        (b"$5\r\nHello\r\n", (BulkString(b"Hello"), 11)),
+        (b"$12\r\nHello, World\r\n", (BulkString(b"Hello World"), 19)),
+        (b"$12\r\nHello\r\nWorld\r\n", (BulkString(b"Hello\r\nWorld"), 19)),
+        (b"$0\r\n\r\n", (BulkString(b""), 6)),
+        (b"$-1\r\n", (BulkString(None), 5)),
+        # Test cases for Arrays
+        (b"*0", (None, 0)),
+        (b"*0\r\n", (Array([]), 4)),
+        (b"*-1\r\n", (Array(None), 5)),
+        (b"*2\r\n$5\r\nhello\r\n$5\r\n", (None, 0)),
+        (
+            b"*2\r\n$5\r\nhello\r\n$5\r\nworld\r\n",
+            (Array([BulkString(b"hello"), BulkString(b"world")]), 26),
+        ),
+        (b"*2\r\n$5\r\nhello\r\n$5\r\n+OK", (None, 0)),
+        (
+            b"*2\r\n$5\r\nhello\r\n$5\r\nworld\r\n",
+            (Array([BulkString(b"hello"), BulkString(b"world")]), 26),
+        ),
+        (
+            b"*3\r\n:1\r\n:2\r\n:3\r\n",
+            (Array([Integer(1), Integer(2), Integer(3)]), 16),
+        ),
     ],
 )
 def test_read_frame_simple_string(buffer, expected):
     """Using Pytest's parametrize"""
     actual = extract_frame_from_buffer(buffer)
     assert actual == expected
-
-
-def test_read_frame_simple_string_incomplete_frame():
-    """Handle incomplete frame"""
-
-    buffer = b"+Par"
-    frame, frame_size = extract_frame_from_buffer(buffer)
-    assert frame == None
-    assert frame_size == 0
-
-
-def test_read_frame_simple_string_complete_frame():
-    """Handle complete frame"""
-
-    buffer = b"+OK\r\n"
-    frame, frame_size = extract_frame_from_buffer(buffer)
-    assert frame == SimpleString("OK")
-    assert frame_size == 5
-
-
-def test_read_frame_simple_string_extra_data():
-    """Handle extra data"""
-
-    buffer = b"+OK\r\n+Next"
-    frame, frame_size = extract_frame_from_buffer(buffer)
-    assert frame == SimpleString("OK")
-    assert frame_size == 5
-
-
-def test_read_frame_null_value():
-    "Handle Null values witha  special variation of Bulk Strings"
-
-    buffer = b"$-1\r\n"
-    frame, frame_size = extract_frame_from_buffer(buffer)
-    assert frame == None
-    assert frame_size == None
-
-
-def test_read_array_ping():
-    "Handle arrays"
-
-    buffer = b"*1\r\n$4\r\nping\r\n"
-    frame, frame_size = extract_frame_from_buffer(buffer)
-    assert frame == SimpleString("OK")
-    assert frame_size == 5
-
-
-def test_read_array_echo():
-    "Handle arrays"
-
-    buffer = b"*2\r\n$4\r\necho\r\nhello world\r\n"
-    frame, frame_size = extract_frame_from_buffer(buffer)
-    assert frame == SimpleString("OK")
-    assert frame_size == 5
-
-
-def test_read_array_get():
-    "Handle arrays"
-
-    buffer = b"*2\r\n$4\r\nget\r\nkey\r\n"
-    frame, frame_size = extract_frame_from_buffer(buffer)
-    assert frame == SimpleString("OK")
-    assert frame_size == 5
-
-
-def test_read_simple_string():
-    "Handle simple string"
-
-    buffer = b"+OK\r\n"
-    frame, frame_size = extract_frame_from_buffer(buffer)
-    assert frame == SimpleString("OK")
-    assert frame_size == 5
-
-
-def test_read_error():
-    "Handle error"
-
-    buffer = b"-Error message\r\n"
-    frame, frame_size = extract_frame_from_buffer(buffer)
-    assert frame == None
-    assert frame_size == None
-
-
-def test_read_bulk_string():
-    "Handle bulk string"
-
-    buffer = b"$0\r\n\r\n"
-    frame, frame_size = extract_frame_from_buffer(buffer)
-    assert frame == SimpleString("OK")
-    assert frame_size == 5
-
-
-def test_handle_more_simple_strings():
-    "Handle simple string"
-
-    buffer = b"+hello world\r\n"
-    frame, frame_size = extract_frame_from_buffer(buffer)
-    assert frame == SimpleString("OK")
-    assert frame_size == 5
-
-
-def test_handle_integer():
-    "Handle integer"
-
-    buffer = b":5\r\n"
-    frame, frame_size = extract_frame_from_buffer(buffer)
-    assert frame == 5
-    assert frame_size == 5

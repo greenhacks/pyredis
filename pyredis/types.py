@@ -26,8 +26,8 @@ class Integer:
 class Array(Sequence):
     data: list
 
-    def __getitem__(self, i):
-        return self.data[i]
+    def __getitem__(self, index: int):
+        return self.data[index]
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.data)
