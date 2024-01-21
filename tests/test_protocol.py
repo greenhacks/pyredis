@@ -1,6 +1,6 @@
 """Tests for TCP protocol handler"""
 import pytest
-from pyredis.protocol import extract_frame_from_buffer
+from pyredis.protocol import extract_frame_from_buffer, encode_message
 from pyredis.types import Array, BulkString, Integer, Error, SimpleString
 
 
