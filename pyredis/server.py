@@ -2,6 +2,35 @@
 
 import socket
 
+from pyredis.commands import handle_command
+from pyredis.protocol import encode_message, extract_frame_from_buffer
+
+RECV_SIZE = 2048
+
+
+def handle_client_connection(client_socket):
+    buffer = bytearray()
+
+    try:
+        while True:
+            data = client_socket.recv(RECV_SIZE)
+
+            if not data:
+                break
+
+            # do something with the data
+            buffer.extend(data)
+
+            frame, frame_size = extract_frame_from_buffer(buffer)
+
+            if frame:
+                buffer = buffer[frame_size:]
+                result = handle_command(frame)
+                client_socket.send(encode_message(result))
+
+    finally:
+        client_socket.close()
+
 
 class Server:
     """Sits in a loop listening for connections"""
@@ -17,27 +46,17 @@ class Server:
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server_socket:
             self._server_socket = server_socket
             server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-            # TODO: Bind to an address and listen for incoming connections
+            # Bind to an address and listen for incoming connections
+            server_address = ("localhost", self.port)
+            server_socket.bind(server_address)
+            server_socket.listen()
 
             while self._running:
-                # TODO: Accepting connection
-
-                # TODO: Handle client connection
+                # Accept and handle client connection
+                connection, _ = server_socket.accept()
+                handle_client_connection()
 
                 pass
 
     def stop(self):
         self._running = False
-
-    def handle_client_connection(client_socket):
-        try:
-            while True:
-                data = client_socket.recv(RECV_SIZE)
-
-                if not data:
-                    break
-
-                # TODO: do something with the data
-
-        finally:
-            client_socket.close()
