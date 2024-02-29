@@ -1,6 +1,7 @@
 """Build a TCP-based server"""
 
 import socket
+import threading
 
 from pyredis.commands import handle_command
 from pyredis.datastore import DataStore
@@ -38,7 +39,7 @@ class Server:
 
     def __init__(self, port):
         self.port = port
-        # self._running = False
+        self._running = False
         self._datastore = DataStore()
 
     def run(self):
@@ -56,6 +57,7 @@ class Server:
             while self._running:
                 # Accept and handle client connection
                 connection, _ = server_socket.accept()
+                # TODO: Change the following line to create a new thread.
                 handle_client_connection(connection, self._datastore)
 
     def stop(self):
