@@ -57,8 +57,11 @@ class Server:
             while self._running:
                 # Accept and handle client connection
                 connection, _ = server_socket.accept()
-                # TODO: Change the following line to create a new thread.
-                handle_client_connection(connection, self._datastore)
+                # handle_client_connection(connection, self._datastore)
+
+                client_handler = threading.Thread(
+                    target=handle_client_connection, args=(connection, self._datastore)
+                )
 
     def stop(self):
         self._running = False
