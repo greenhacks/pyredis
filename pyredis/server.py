@@ -63,5 +63,7 @@ class Server:
                     target=handle_client_connection, args=(connection, self._datastore)
                 )
 
+                client_handler.start()
+
     def stop(self):
         self._running = False

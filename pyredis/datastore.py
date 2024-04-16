@@ -8,6 +8,7 @@ when we're writing to it.
 """
 
 from threading import Lock
+import datetime
 
 
 class DataStore:
@@ -19,6 +20,7 @@ class DataStore:
 
     def __init__(self):
         self._data = dict()
+        self._expiry = datetime.timestamp()
         self._lock = Lock()
 
     def __getitem__(self, key):
@@ -27,3 +29,6 @@ class DataStore:
 
     def __setitem__(self, key, value):
         self._data[key] = value
+
+    def set_with_expiry(key, value, time):
+        
